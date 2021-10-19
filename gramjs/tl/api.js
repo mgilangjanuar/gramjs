@@ -159,7 +159,7 @@ async function getInputFromResolve(utils, client, peer, peerType) {
         case "InputUser":
             return utils.getInputUser(await client.getInputEntity(peer));
         case "InputDialogPeer":
-            return await client._getInputDialog(peer);
+            return utils.getInputDialog(peer);
         case "InputNotifyPeer":
             return await client._getInputNotify(peer);
         case "InputMedia":

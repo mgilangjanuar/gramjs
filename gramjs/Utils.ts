@@ -312,8 +312,7 @@ export function getInputUser(entity: EntityLike): Api.TypeInputUser {
  * @param dialog
  */
 
-/*CONTEST
-function getInputDialog(dialog) {
+export function getInputDialog(dialog: any) {
     try {
         if (dialog.SUBCLASS_OF_ID === 0xa21c9795) { // crc32(b'InputDialogPeer')
             return dialog
@@ -326,14 +325,14 @@ function getInputDialog(dialog) {
     }
 
     try {
-        return new Api.InputDialogPeer(getInputPeer(dialog))
+        return new Api.InputDialogPeer(getInputPeer(dialog) as any)
         // eslint-disable-next-line no-empty
     } catch (e) {
 
     }
     _raiseCastFail(dialog, 'InputDialogPeer')
 }
-*/
+
 /**
  *  Similar to :meth:`get_input_peer`, but for input messages.
  */
