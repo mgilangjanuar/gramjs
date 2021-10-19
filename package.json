@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gram-js/gramjs.git"
+    "url": "git+https://github.com/mgilangjanuar/gramjs.git"
   },
   "browser": {
     "fs": false
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/gram-js/gramjs/issues"
+    "url": "https://github.com/mgilangjanuar/gramjs/issues"
   },
   "keywords": [
     "telegram",
@@ -24,7 +24,7 @@
     "userbot",
     "api"
   ],
-  "homepage": "https://github.com/gram-js/gramjs#readme",
+  "homepage": "https://github.com/mgilangjanuar/gramjs#readme",
   "optionalDependencies": {
     "bufferutil": "^4.0.3",
     "utf-8-validate": "^5.0.5"
