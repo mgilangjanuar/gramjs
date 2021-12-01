@@ -3,25 +3,33 @@ import type { Entity, EntityLike } from "../define";
 import { ChatGetter } from "../tl/custom";
 import type { TelegramClient } from "..";
 
-import { isArrayLike } from "../Helpers";
+import { isArrayLike, returnBigInt } from "../Helpers";
 import { utils } from "../";
+import { SenderGetter } from "../tl/custom/senderGetter";
+import bigInt from "big-integer";
 
 /** @hidden */
 export async function _intoIdSet(
     client: TelegramClient,
     chats: EntityLike[] | EntityLike | undefined
-): Promise<number[] | undefined> {
+): Promise<string[] | undefined> {
     if (chats == undefined) {
         return undefined;
     }
     if (!isArrayLike(chats)) {
         chats = [chats];
     }
-    const result: Set<number> = new Set<number>();
+    const result: Set<string> = new Set<string>();
     for (let chat of chats) {
-        if (typeof chat == "number") {
-            if (chat < 0) {
-                result.add(chat);
+        if (
+            typeof chat == "number" ||
+            typeof chat == "bigint" ||
+            typeof chat == "string" ||
+            bigInt.isInstance(chat)
+        ) {
+            chat = returnBigInt(chat);
+            if (chat.lesser(0)) {
+                result.add(chat.toString());
             } else {
                 result.add(
                     utils.getPeerId(
@@ -120,7 +128,9 @@ export class EventBuilder {
         this.chats = await _intoIdSet(client, this.chats);
     }
 
-    filter(event: EventCommon): undefined | EventCommon {
+    filter(
+        event: EventCommon | EventCommonSender
+    ): undefined | EventCommon | EventCommonSender {
         if (!this.resolved) {
             return;
         }
@@ -150,7 +160,7 @@ interface EventCommonInterface {
 
 export class EventCommon extends ChatGetter {
     _eventName = "Event";
-    _entities: Map<number, Entity>;
+    _entities: Map<string, Entity>;
     _messageId?: number;
 
     constructor({
@@ -160,6 +170,32 @@ export class EventCommon extends ChatGetter {
     }: EventCommonInterface) {
         super();
         ChatGetter.initChatClass(this, { chatPeer, broadcast });
+        this._entities = new Map();
+        this._client = undefined;
+        this._messageId = msgId;
+    }
+
+    _setClient(client: TelegramClient) {
+        this._client = client;
+    }
+
+    get client() {
+        return this._client;
+    }
+}
+export class EventCommonSender extends SenderGetter {
+    _eventName = "Event";
+    _entities: Map<string, Entity>;
+    _messageId?: number;
+
+    constructor({
+        chatPeer = undefined,
+        msgId = undefined,
+        broadcast = undefined,
+    }: EventCommonInterface) {
+        super();
+        ChatGetter.initChatClass(this, { chatPeer, broadcast });
+        SenderGetter.initChatClass(this, { chatPeer, broadcast });
         this._entities = new Map();
         this._client = undefined;
         this._messageId = msgId;
