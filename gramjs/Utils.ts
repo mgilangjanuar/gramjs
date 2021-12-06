@@ -986,7 +986,7 @@ export function getPeer(peer: EntityLike | any) {
     if (typeof peer === "string") {
         _raiseCastFail(peer, "peer");
     }
-    if (typeof peer=="number" ||typeof peer=="bigint"){
+    if (typeof peer == "number" || typeof peer == "bigint") {
         peer = returnBigInt(peer);
     }
     try {
@@ -1187,7 +1187,7 @@ export function getMessageId(message: any): number | undefined {
 export function parsePhone(phone: string) {
     phone = phone.toString().replace(/[()\s-]/gm, "");
     if (phone.startsWith("+") && phone.split("+").length - 1 == 1) {
-        return !isNaN(Number(phone)) ? phone : undefined;
+        return !isNaN(Number(phone)) ? phone.replace("+", "") : undefined;
     }
 }
 
