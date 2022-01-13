@@ -766,7 +766,7 @@ export async function sendMessage(
             peer: entity,
             message: message.message || "",
             silent: silent,
-            replyToMsgId: getMessageId(replyTo),
+            replyToMsgId: getMessageId(replyTo as any),
             replyMarkup: markup,
             entities: message.entities,
             clearDraft: clearDraft,
@@ -793,7 +793,7 @@ export async function sendMessage(
             message: message.toString(),
             entities: formattingEntities,
             noWebpage: !linkPreview,
-            replyToMsgId: getMessageId(replyTo),
+            replyToMsgId: getMessageId(replyTo as any),
             clearDraft: clearDraft,
             silent: silent,
             replyMarkup: client.buildReplyMarkup(buttons),
@@ -1053,7 +1053,7 @@ export async function _pin(
     notify: boolean = false,
     pmOneSide: boolean = false
 ) {
-    message = utils.getMessageId(message) || 0;
+    message = utils.getMessageId(message as any) || 0;
 
     if (message === 0) {
         return await client.invoke(

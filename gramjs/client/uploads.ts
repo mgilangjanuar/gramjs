@@ -470,7 +470,7 @@ export async function _sendAlbum(
     for (const c of caption) {
         captions.push(await _parseMessageText(client, c, parseMode));
     }
-    replyTo = utils.getMessageId(replyTo);
+    replyTo = utils.getMessageId(replyTo as any);
     const albumFiles = [];
     for (const file of files) {
         let { fileHandle, media, image } = await _fileToMedia(client, {
@@ -570,7 +570,7 @@ export async function sendFile(
         caption = "";
     }
     entity = await client.getInputEntity(entity);
-    replyTo = utils.getMessageId(replyTo);
+    replyTo = utils.getMessageId(replyTo as any);
     if (Array.isArray(file)) {
         return await _sendAlbum(client, entity, {
             file: file,
