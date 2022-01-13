@@ -224,15 +224,15 @@ async function computeDigest(
  * @param password {string}
  */
 async function computeCheck(request: Api.account.Password, password: string) {
-    const algo = request.currentAlgo;
-    if (
-        !(
-            algo instanceof
-            Api.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow
-        )
-    ) {
-        throw new Error(`Unsupported password algorithm ${algo?.className}`);
-    }
+    const algo: any = request.currentAlgo;
+    // if (
+    //     !(
+    //         algo instanceof
+    //         Api.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow
+    //     )
+    // ) {
+    //     throw new Error(`Unsupported password algorithm ${algo?.className}`);
+    // }
     const srp_B = request.srp_B;
     const srpId = request.srpId;
     if (!srp_B || !srpId) {

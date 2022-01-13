@@ -1,6 +1,6 @@
 {
   "name": "@mgilangjanuar/telegram",
-  "version": "2.2.3",
+  "version": "2.2.3-var1",
   "description": "NodeJS/Browser MTProto API Telegram client library,",
   "main": "index.js",
   "types": "index.d.ts",
