@@ -6,12 +6,17 @@ import { ChatGetter } from "./chatGetter";
 import * as utils from "../../Utils";
 import { Forward } from "./forward";
 import type { File } from "./file";
-import { EditMessageParams, SendMessageParams } from "../../client/messages";
+import {
+    EditMessageParams,
+    SendMessageParams,
+    UpdatePinMessageParams,
+} from "../../client/messages";
 import { DownloadMediaInterface } from "../../client/downloads";
 import { inspect } from "util";
 import { betterConsoleLog, returnBigInt } from "../../Helpers";
 import { _selfId } from "../../client/users";
 import bigInt, { BigInteger } from "big-integer";
+import { LogLevel } from "../../extensions/Logger";
 
 interface MessageBaseInterface {
     id: any;
@@ -505,7 +510,7 @@ export class CustomMessage extends SenderGetter {
                 "Got error while trying to finish init message with id " +
                     this.id
             );
-            if (this._client._log.canSend("error")) {
+            if (this._client._log.canSend(LogLevel.ERROR)) {
                 console.error(e);
             }
         }
@@ -816,10 +821,46 @@ export class CustomMessage extends SenderGetter {
         }
     }
 
+    async pin(params?: UpdatePinMessageParams) {
+        if (this._client) {
+            const entity = await this.getInputChat();
+            if (entity === undefined) {
+                throw Error(
+                    "Failed to pin message due to cannot get input chat."
+                );
+            }
+            return this._client.pinMessage(entity, this.id, params);
+        }
+    }
+
+    async unpin(params?: UpdatePinMessageParams) {
+        if (this._client) {
+            const entity = await this.getInputChat();
+            if (entity === undefined) {
+                throw Error(
+                    "Failed to unpin message due to cannot get input chat."
+                );
+            }
+            return this._client.unpinMessage(entity, this.id, params);
+        }
+    }
+
     async downloadMedia(params: DownloadMediaInterface) {
         // small hack for patched method
         if (this._client)
             return this._client.downloadMedia(this as any, params);
+    }
+
+    async markAsRead() {
+        if (this._client) {
+            const entity = await this.getInputChat();
+            if (entity === undefined) {
+                throw Error(
+                    `Failed to mark message id ${this.id} as read due to cannot get input chat.`
+                );
+            }
+            return this._client.markAsRead(entity, this.id);
+        }
     }
 
     /* TODO doesn't look good enough.
@@ -877,27 +918,6 @@ export class CustomMessage extends SenderGetter {
         if (!j) return this._buttonsFlat[i].click();
         else return this._buttons[i][j].click();
     }
-*/
-    /* TODO add missing friendly functions
-    async markRead() {
-        if (this._client) {
-            await this._client.sendReadAcknowledge({
-                entity: await this.getInputChat(),
-                maxId: this.id
-            });
-        }
-    }
-
-    async pin(notify = false) {
-        if (this._client) {
-            await this._client.pinMessage({
-                entity: await this.getInputChat(),
-                message: this.id,
-                notify: notify
-            });
-        }
-    }
-*/
     /*
         _setButtons(chat, bot) {
             // TODO: Implement MessageButton

@@ -27,6 +27,7 @@ import { Session } from "../sessions";
 import { inspect } from "util";
 import { Album, AlbumEvent } from "../events/Album";
 import { CallbackQuery, CallbackQueryEvent } from "../events/CallbackQuery";
+import { EditedMessage, EditedMessageEvent } from "../events/EditedMessage";
 
 /**
  * The TelegramClient uses several methods in different files to provide all the common functionality in a nice interface.</br>
@@ -716,10 +717,11 @@ export class TelegramClient extends TelegramBaseClient {
      *  Used to edit a message by changing it's text or media
      *  message refers to the message to be edited not what to edit
      *  text refers to the new text
-     *  See also Message.edit()
+     *  See also Message.edit()<br/>
+     *  Notes: It is not possible to edit the media of a message that doesn't contain media.
      *  @param entity - From which chat to edit the message.<br/>
      *  This can also be the message to be edited, and the entity will be inferred from it, so the next parameter will be assumed to be the message text.<br/>
-     *  You may also pass a InputBotInlineMessageID, which is the only way to edit messages that were sent after the user selects an inline query result.
+     *  You may also pass a InputBotInlineMessageID, which is the only way to edit messages that were sent after the user selects an inline query result. Not supported yet!
      *  @param editMessageParams - see {@link EditMessageParams}.
      *  @return The edited Message.
      *  @throws
@@ -773,6 +775,130 @@ export class TelegramClient extends TelegramBaseClient {
         return messageMethods.deleteMessages(this, entity, messageIds, {
             revoke: revoke,
         });
+    }
+
+    /**
+     * Pins a message in a chat.
+     *
+     * See also {@link Message.pin}`.
+     *
+     * @remarks The default behavior is to **not** notify members, unlike the official applications.
+     * @param entity - The chat where the message should be pinned.
+     * @param message - The message or the message ID to pin. If it's `undefined`, all messages will be unpinned instead.
+     * @param pinMessageParams - see {@link UpdatePinMessageParams}.
+     * @return
+     * The pinned message. if message is undefined the return will be {@link AffectedHistory}
+     * @example
+     *  ```ts
+     *  const message = await client.sendMessage(chat, 'GramJS is awesome!');
+     *
+     *  await client.pinMessage(chat, message);
+     *  ```
+     */
+    pinMessage(
+        entity: EntityLike,
+        message?: undefined,
+        pinMessageParams?: messageMethods.UpdatePinMessageParams
+    ): Promise<Api.messages.AffectedHistory>;
+    pinMessage(
+        entity: EntityLike,
+        message: MessageIDLike,
+        pinMessageParams?: messageMethods.UpdatePinMessageParams
+    ): Promise<Api.Message>;
+    pinMessage(
+        entity: EntityLike,
+        message?: any,
+        pinMessageParams?: messageMethods.UpdatePinMessageParams
+    ) {
+        return messageMethods.pinMessage(
+            this,
+            entity,
+            message,
+            pinMessageParams
+        );
+    }
+
+    /**
+     * Unpins a message in a chat.
+     *
+     * See also {@link Message.unpin}`.
+     *
+     * @remarks The default behavior is to **not** notify members, unlike the official applications.
+     * @param entity - The chat where the message should be unpinned.
+     * @param message - The message or the message ID to unpin. If it's `undefined`, all messages will be unpinned instead.
+     * @param pinMessageParams - see {@link UpdatePinMessageParams}.
+     * @return
+     * The pinned message. if message is undefined the return will be {@link AffectedHistory}
+     * @example
+     *  ```ts
+     *  const message = await client.sendMessage(chat, 'GramJS is awesome!');
+     *
+     *  // unpin one message
+     *  await client.unpinMessage(chat, message);
+     *
+     *  // unpin all messages
+     *  await client.unpinMessage(chat);
+     *  ```
+     */
+    unpinMessage(
+        entity: EntityLike,
+        message?: undefined,
+        pinMessageParams?: messageMethods.UpdatePinMessageParams
+    ): Promise<Api.messages.AffectedHistory>;
+    unpinMessage(
+        entity: EntityLike,
+        message: MessageIDLike,
+        pinMessageParams?: messageMethods.UpdatePinMessageParams
+    ): Promise<undefined>;
+    unpinMessage(
+        entity: EntityLike,
+        message?: any,
+        unpinMessageParams?: messageMethods.UpdatePinMessageParams
+    ) {
+        return messageMethods.unpinMessage(
+            this,
+            entity,
+            message,
+            unpinMessageParams
+        ) as Promise<Api.messages.AffectedHistory | undefined>;
+    }
+
+    /**
+     * Marks messages as read and optionally clears mentions. <br/>
+     * This effectively marks a message as read (or more than one) in the given conversation. <br />
+     * If a message or maximum ID is provided, all the messages up to and
+     * including such ID will be marked as read (for all messages whose ID ≤ max_id).
+     *
+     * See also {@link Message.markRead}`.
+     *
+     * @remarks If neither message nor maximum ID are provided, all messages will be marked as read by assuming that `max_id = 0`.
+     * @param entity - The chat where the message should be pinned.
+     * @param message - The message or the message ID to pin. If it's `undefined`, all messages will be unpinned instead.
+     * @param markAsReadParams - see {@link MarkAsReadParams}.
+     * @return boolean
+     * @example
+     *  ```ts
+     *  // using a Message object
+     *  const message = await client.sendMessage(chat, 'GramJS is awesome!');
+     *  await client.markAsRead(chat, message)
+     *  // ...or using the int ID of a Message
+     *  await client.markAsRead(chat, message.id);
+     *
+     *  // ...or passing a list of messages to mark as read
+     *  await client.markAsRead(chat, messages)
+     *  ```
+     */
+    markAsRead(
+        entity: EntityLike,
+        message?: MessageIDLike | MessageIDLike[],
+        markAsReadParams?: messageMethods.MarkAsReadParams
+    ) {
+        return messageMethods.markAsRead(
+            this,
+            entity,
+            message,
+            markAsReadParams
+        );
     }
 
     //endregion
@@ -917,6 +1043,10 @@ export class TelegramClient extends TelegramBaseClient {
         event: Album
     ): void;
     addEventHandler(
+        callback: { (event: EditedMessageEvent): void },
+        event: EditedMessage
+    ): void;
+    addEventHandler(
         callback: { (event: any): void },
         event?: EventBuilder
     ): void;
@@ -945,7 +1075,7 @@ export class TelegramClient extends TelegramBaseClient {
     // region uploads
     /**
      * Uploads a file to Telegram's servers, without sending it.
-     * @remark generally it's better to use {@link sendFile} instead.
+     * @remarks generally it's better to use {@link sendFile} instead.
      * This method returns a handle (an instance of InputFile or InputFileBig, as required) which can be later used before it expires (they are usable during less than a day).<br/>
      * Uploading a file will simply return a "handle" to the file stored remotely in the Telegram servers,
      * which can be later used on. This will not upload the file to your own chat or any chat at all.
@@ -1004,7 +1134,7 @@ export class TelegramClient extends TelegramBaseClient {
      *  lastName:'',
      *  vcard:''
      *  }))
-     ```
+     * ```
      */
     sendFile(
         entity: EntityLike,
@@ -1083,6 +1213,7 @@ export class TelegramClient extends TelegramBaseClient {
     /**
      * Turns the given entity into a valid Telegram {@link Api.User}, {@link Api.Chat} or {@link Api.Channel}.<br/>
      * You can also pass a list or iterable of entities, and they will be efficiently fetched from the network.
+     * @remarks Telegram does not allow to get user profile by integer id if current client had never "saw" it.
      * @param entity - If a username is given, the username will be resolved making an API call every time.<br/>
      * Resolving usernames is an expensive operation and will start hitting flood waits around 50 usernames in a short period of time.<br/>
      * <br/>
