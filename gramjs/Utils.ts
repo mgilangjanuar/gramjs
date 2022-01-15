@@ -633,10 +633,8 @@ export function getExtension(media: any): string {
  * str or an ``open()``'ed file (which has a ``.name`` attribute).
  */
 function _getExtension(file: any): string {
-    var kind;
     if (typeof file === "string") {
-        // thanks Stackoverflow
-        return file.slice(((file.lastIndexOf(".") - 2) >>> 0) + 2);
+        return "."+file.split('.').pop();
     } else if ("name" in file) {
         return _getExtension(file.name);
     } else {
@@ -1171,9 +1169,9 @@ export function  _getEntityPair(entityId, entities, cache, getInputPeer = getInp
 */
 
 export function getMessageId(
-    message: number | Api.TypeMessage | MessageIDLike
+    message: number | Api.TypeMessage | MessageIDLike | undefined
 ): number | undefined {
-    if (message === null || message === undefined) {
+    if (!message) {
         return undefined;
     } else if (typeof message === "number") {
         return message;
