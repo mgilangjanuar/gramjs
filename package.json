@@ -1,6 +1,6 @@
 {
-  "name": "@mgilangjanuar/telegram",
-  "version": "2.5.44",
+  "name": "teledrive-client",
+  "version": "2.5.47",
   "description": "NodeJS/Browser MTProto API Telegram client library,",
   "main": "index.js",
   "types": "index.d.ts",
@@ -66,5 +66,8 @@
     "websocket": "^1.0.34",
     "node-localstorage": "^2.2.1",
     "socks": "^2.6.2"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
   }
 }
