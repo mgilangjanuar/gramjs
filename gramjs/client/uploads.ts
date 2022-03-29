@@ -4,10 +4,11 @@ import { TelegramClient } from "./TelegramClient";
 import { generateRandomBytes, readBigIntFromBuffer, sleep } from "../Helpers";
 import { getAppropriatedPartSize, getInputMedia } from "../Utils";
 import { EntityLike, FileLike, MarkupLike, MessageIDLike } from "../define";
-import path from "path";
-import { promises as fs } from "fs";
+import path from "./path";
+import { promises as fs } from "./fs";
 import { errors, utils } from "../index";
 import { _parseMessageText } from "./messageParse";
+import { getCommentData } from "./messages";
 
 interface OnProgress {
     // Float between 0 and 1.
@@ -226,6 +227,12 @@ export interface SendFileInterface {
     /** How many workers to use to upload the file. anything above 16 is unstable. */
     workers?: number;
     noforwards?: boolean;
+    /** Similar to ``replyTo``, but replies in the linked group of a broadcast channel instead (effectively leaving a "comment to" the specified message).
+
+     This parameter takes precedence over ``replyTo``.
+     If there is no linked chat, `SG_ID_INVALID` is thrown.
+     */
+    commentTo?: number | Api.Message;
 }
 
 interface FileToMediaInterface {
@@ -337,7 +344,7 @@ export async function _fileToMedia(
             } else {
                 name = "unnamed";
             }
-            if (file instanceof Buffer) {
+            if (Buffer.isBuffer(file)) {
                 createdFile = new CustomFile(name, file.length, "", file);
             }
         }
@@ -397,7 +404,7 @@ export async function _fileToMedia(
                 } else {
                     name = "unnamed";
                 }
-                if (thumb instanceof Buffer) {
+                if (Buffer.isBuffer(thumb)) {
                     uploadedThumb = new CustomFile(
                         name,
                         thumb.length,
@@ -451,6 +458,7 @@ export async function _sendAlbum(
         scheduleDate,
         workers = 1,
         noforwards,
+        commentTo,
     }: SendFileInterface
 ) {
     entity = await client.getInputEntity(entity);
@@ -470,7 +478,13 @@ export async function _sendAlbum(
     for (const c of caption) {
         captions.push(await _parseMessageText(client, c, parseMode));
     }
-    replyTo = utils.getMessageId(replyTo as any);
+    if (commentTo != undefined) {
+        const discussionData = await getCommentData(client, entity, commentTo);
+        entity = discussionData.entity;
+        replyTo = discussionData.replyTo;
+    } else {
+        replyTo = utils.getMessageId(replyTo);
+    }
     const albumFiles = [];
     for (const file of files) {
         let { fileHandle, media, image } = await _fileToMedia(client, {
@@ -561,6 +575,7 @@ export async function sendFile(
         scheduleDate,
         workers = 1,
         noforwards,
+        commentTo,
     }: SendFileInterface
 ) {
     if (!file) {
@@ -570,7 +585,13 @@ export async function sendFile(
         caption = "";
     }
     entity = await client.getInputEntity(entity);
-    replyTo = utils.getMessageId(replyTo as any);
+    if (commentTo != undefined) {
+        const discussionData = await getCommentData(client, entity, commentTo);
+        entity = discussionData.entity;
+        replyTo = discussionData.replyTo;
+    } else {
+        replyTo = utils.getMessageId(replyTo);
+    }
     if (Array.isArray(file)) {
         return await _sendAlbum(client, entity, {
             file: file,
@@ -630,14 +651,14 @@ export async function sendFile(
     return client._getResponseMessage(request, result, entity) as Api.Message;
 }
 
-function fileToBuffer(file: File | CustomFile) {
+function fileToBuffer(file: File | CustomFile): Promise<Buffer> | Buffer {
     if (typeof File !== "undefined" && file instanceof File) {
-        return new Response(file).arrayBuffer();
+        return new Response(file).arrayBuffer() as Promise<Buffer>;
     } else if (file instanceof CustomFile) {
         if (file.buffer != undefined) {
             return file.buffer;
         } else {
-            return fs.readFile(file.path);
+            return fs.readFile(file.path) as unknown as Buffer;
         }
     } else {
         throw new Error("Could not create buffer from file " + file);

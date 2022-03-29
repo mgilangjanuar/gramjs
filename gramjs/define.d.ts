@@ -6,6 +6,7 @@ import TypeChat = Api.TypeChat;
 import TypeInputUser = Api.TypeInputUser;
 import TypeInputChannel = Api.TypeInputChannel;
 import bigInt from "big-integer";
+import { WriteStream } from "fs";
 
 type ValueOf<T> = T[keyof T];
 type Phone = string;
@@ -50,13 +51,18 @@ type FileLike =
     | BotFileID
     | Buffer
     | Api.TypeMessageMedia
+    | Api.TypeInputMedia
     | Api.TypeInputFile
     | Api.TypeInputFileLocation
     | File
     | Api.TypePhoto
     | Api.TypeDocument
     | CustomFile;
-
+type OutFile =
+    | string
+    | Buffer
+    | WriteStream
+    | { write: Function; close?: Function };
 type ProgressCallback = (total: number, downloaded: number) => void;
 type ButtonLike = Api.TypeKeyboardButton | Button;
 

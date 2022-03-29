@@ -3,10 +3,69 @@ import { Api } from "./tl";
 import bigInt from "big-integer";
 import * as markdown from "./extensions/markdown";
 import { EntityCache } from "./entityCache";
-import mime from "mime-types";
+import mime from "mime";
 import type { ParseInterface } from "./client/messageParse";
 import { MarkdownParser } from "./extensions/markdown";
 import { CustomFile } from "./client/uploads";
+
+export function getFileInfo(
+    fileLocation:
+        | Api.Message
+        | Api.MessageMediaDocument
+        | Api.MessageMediaPhoto
+        | Api.TypeInputFileLocation
+): {
+    dcId?: number;
+    location: Api.TypeInputFileLocation;
+    size?: number;
+} {
+    if (!fileLocation || !fileLocation.SUBCLASS_OF_ID) {
+        _raiseCastFail(fileLocation, "InputFileLocation");
+    }
+    if (fileLocation.SUBCLASS_OF_ID == 354669666) {
+        return {
+            dcId: undefined,
+            location: fileLocation,
+            size: undefined,
+        };
+    }
+    let location;
+    if (fileLocation instanceof Api.Message) {
+        location = fileLocation.media;
+    }
+    if (fileLocation instanceof Api.MessageMediaDocument) {
+        location = fileLocation.document;
+    } else if (fileLocation instanceof Api.MessageMediaPhoto) {
+        location = fileLocation.photo;
+    }
+
+    if (location instanceof Api.Document) {
+        return {
+            dcId: location.dcId,
+            location: new Api.InputDocumentFileLocation({
+                id: location.id,
+                accessHash: location.accessHash,
+                fileReference: location.fileReference,
+                thumbSize: "",
+            }),
+            size: location.size,
+        };
+    } else if (location instanceof Api.Photo) {
+        return {
+            dcId: location.dcId,
+            location: new Api.InputPhotoFileLocation({
+                id: location.id,
+                accessHash: location.accessHash,
+                fileReference: location.fileReference,
+                thumbSize: location.sizes[location.sizes.length - 1].type,
+            }),
+            size: _photoSizeByteCount(
+                location.sizes[location.sizes.length - 1]
+            ),
+        };
+    }
+    _raiseCastFail(fileLocation, "InputFileLocation");
+}
 
 /**
  * Turns the given iterable into chunks of the specified size,
@@ -42,7 +101,7 @@ const VALID_USERNAME_RE = new RegExp(
     "i"
 );
 
-function _raiseCastFail(entity: EntityLike, target: any): never {
+function _raiseCastFail(entity: any, target: string): never {
     let toWrite = entity;
     if (typeof entity === "object" && "className" in entity) {
         toWrite = entity.className;
@@ -582,7 +641,7 @@ export function isAudio(file: any): boolean {
         return (metadata.get("mimeType") || "").startsWith("audio/");
     } else {
         file = "a" + ext;
-        return (mime.lookup(file) || "").startsWith("audio/");
+        return (mime.getType(file) || "").startsWith("audio/");
     }
 }
 
@@ -622,7 +681,7 @@ export function getExtension(media: any): string {
             // Octet stream are just bytes, which have no default extension
             return "";
         } else {
-            return mime.extension(media.mimeType) || "";
+            return mime.getExtension(media.mimeType) || "";
         }
     }
     return "";
@@ -658,7 +717,7 @@ function isVideo(file: any): boolean {
         }
     } else {
         file = "a" + ext;
-        return (mime.lookup(file) || "").startsWith("video/");
+        return (mime.getType(file) || "").startsWith("video/");
     }
 }
 
@@ -681,7 +740,7 @@ export function getAttributes(
     const name: string =
         typeof file == "string" ? file : file.name || "unnamed";
     if (mimeType === undefined) {
-        mimeType = mime.lookup(name) || "application/octet-stream";
+        mimeType = mime.getType(name) || "application/octet-stream";
     }
     const attrObj = new Map();
     attrObj.set(

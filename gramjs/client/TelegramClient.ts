@@ -12,24 +12,32 @@ import * as userMethods from "./users";
 import * as chatMethods from "./chats";
 import * as dialogMethods from "./dialogs";
 import * as twoFA from "./2fa";
-import type { ButtonLike, Entity, EntityLike, MessageIDLike } from "../define";
+import type {
+    ButtonLike,
+    Entity,
+    EntityLike,
+    MessageIDLike,
+    OutFile,
+    ProgressCallback,
+} from "../define";
 import { Api } from "../tl";
 import { sanitizeParseMode } from "../Utils";
 import type { EventBuilder } from "../events/common";
 import { MTProtoSender } from "../network";
 
 import { LAYER } from "../tl/AllTLObjects";
-import { betterConsoleLog, IS_NODE } from "../Helpers";
+import { betterConsoleLog } from "../Helpers";
 import { DownloadMediaInterface } from "./downloads";
 import { NewMessage, NewMessageEvent } from "../events";
 import { _handleUpdate, _updateLoop } from "./updates";
 import { Session } from "../sessions";
-import { inspect } from "util";
 import { Album, AlbumEvent } from "../events/Album";
 import { CallbackQuery, CallbackQueryEvent } from "../events/CallbackQuery";
 import { EditedMessage, EditedMessageEvent } from "../events/EditedMessage";
 import { DeletedMessage, DeletedMessageEvent } from "../events/DeletedMessage";
 import { LogLevel } from "../extensions/Logger";
+import { inspect } from "../inspect";
+import { isNode } from "../platform";
 
 /**
  * The TelegramClient uses several methods in different files to provide all the common functionality in a nice interface.</br>
@@ -422,9 +430,9 @@ export class TelegramClient extends TelegramBaseClient {
      */
     downloadFile(
         inputLocation: Api.TypeInputFileLocation,
-        fileParams: downloadMethods.DownloadFileParams
+        fileParams: downloadMethods.DownloadFileParamsV2
     ) {
-        return downloadMethods.downloadFile(this, inputLocation, fileParams);
+        return downloadMethods.downloadFileV2(this, inputLocation, fileParams);
     }
 
     //region download
@@ -461,11 +469,9 @@ export class TelegramClient extends TelegramBaseClient {
     /**
      * Downloads the given media from a message or a media object.<br/>
      * this will return an empty Buffer in case of wrong or empty media.
-     * @remarks
-     * If the download is slow you can increase the number of workers. the max appears to be around 16.
      * @param messageOrMedia - instance of a message or a media.
-     * @param downloadParams - {@link DownloadMediaInterface}
-     * @return a buffer containing the downloaded data.
+     * @param downloadParams {@link DownloadMediaInterface}
+     * @return a buffer containing the downloaded data if outputFile is undefined else nothing.
      * @example ```ts
      * const buffer = await client.downloadMedia(message, {})
      * // to save it to a file later on using fs.
@@ -475,7 +481,6 @@ export class TelegramClient extends TelegramBaseClient {
      * const buffer = await client.downloadMedia(message, {
      *     progressCallback : console.log
      * })
-     * // this will print a number between 0 and 1 that represent how much has passed.
      * ```
      */
     downloadMedia(
@@ -485,7 +490,9 @@ export class TelegramClient extends TelegramBaseClient {
         return downloadMethods.downloadMedia(
             this,
             messageOrMedia,
-            downloadParams
+            downloadParams.outputFile,
+            downloadParams.thumb,
+            downloadParams.progressCallback
         );
     }
 
@@ -1158,6 +1165,7 @@ export class TelegramClient extends TelegramBaseClient {
      * Generally this should only be used when there isn't a friendly method that does what you need.<br/>
      * All available requests and types are found under the `Api.` namespace.
      * @param request - The request to send. this should be of type request.
+     * @param sender - Optional sender to use to send the requests. defaults to main sender.
      * @return The response from Telegram.
      * @example
      * ```ts
@@ -1169,8 +1177,11 @@ export class TelegramClient extends TelegramBaseClient {
      *
      * ```
      */
-    invoke<R extends Api.AnyRequest>(request: R): Promise<R["__response"]> {
-        return userMethods.invoke(this, request);
+    invoke<R extends Api.AnyRequest>(
+        request: R,
+        sender?: MTProtoSender
+    ): Promise<R["__response"]> {
+        return userMethods.invoke(this, request, sender);
     }
 
     /**
@@ -1418,7 +1429,7 @@ export class TelegramClient extends TelegramBaseClient {
         downloadDC = false
     ): Promise<{ id: number; ipAddress: string; port: number }> {
         this._log.debug(`Getting DC ${dcId}`);
-        if (!IS_NODE) {
+        if (!isNode) {
             switch (dcId) {
                 case 1:
                     return {
