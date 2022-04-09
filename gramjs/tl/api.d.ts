@@ -13829,6 +13829,18 @@ export namespace Api {
             static fromReader(reader: Reader): ExportedGroupCallInvite;
             link: string;
         }
+        export class GroupCallStreamRtmpUrl extends VirtualClass<{
+            url: string;
+            key: string;
+        }> {
+            CONSTRUCTOR_ID: 767505458;
+            SUBCLASS_OF_ID: 3522500043;
+            classType: "constructor";
+            className: "phone.GroupCallStreamRtmpUrl";
+            static fromReader(reader: Reader): GroupCallStreamRtmpUrl;
+            url: string;
+            key: string;
+        }
     }
 
     export namespace stats {
@@ -14190,6 +14202,7 @@ export namespace Api {
         export type TypeGroupParticipants = phone.GroupParticipants;
         export type TypeJoinAsPeers = phone.JoinAsPeers;
         export type TypeExportedGroupCallInvite = phone.ExportedGroupCallInvite;
+        export type TypeGroupCallStreamRtmpUrl = phone.GroupCallStreamRtmpUrl;
     }
 
     export namespace stats {
@@ -20247,6 +20260,7 @@ export namespace Api {
         export class CreateGroupCall extends Request<
             Partial<{
                 // flags: null;
+                rtmpStream?: boolean;
                 peer: Api.TypeEntityLike;
                 randomId: int;
                 title?: string;
@@ -20260,6 +20274,7 @@ export namespace Api {
             className: "phone.CreateGroupCall";
             static fromReader(reader: Reader): CreateGroupCall;
             // flags: null;
+            rtmpStream?: boolean;
             peer: Api.TypeEntityLike;
             randomId: int;
             title?: string;
@@ -20570,6 +20585,21 @@ export namespace Api {
             className: "phone.LeaveGroupCallPresentation";
             static fromReader(reader: Reader): LeaveGroupCallPresentation;
             call: Api.TypeInputGroupCall;
+        }
+        export class GetGroupCallStreamRtmpUrl extends Request<
+            Partial<{
+                peer: Api.TypeEntityLike;
+                revoke: Bool;
+            }>,
+            phone.TypeGroupCallStreamRtmpUrl
+        > {
+            CONSTRUCTOR_ID: 3736316863;
+            SUBCLASS_OF_ID: 3522500043;
+            classType: "request";
+            className: "phone.GetGroupCallStreamRtmpUrl";
+            static fromReader(reader: Reader): GetGroupCallStreamRtmpUrl;
+            peer: Api.TypeEntityLike;
+            revoke: Bool;
         }
     }
 
@@ -22043,6 +22073,7 @@ export namespace Api {
         | phone.SaveDefaultGroupCallJoinAs
         | phone.JoinGroupCallPresentation
         | phone.LeaveGroupCallPresentation
+        | phone.GetGroupCallStreamRtmpUrl
         | langpack.GetLangPack
         | langpack.GetStrings
         | langpack.GetDifference
