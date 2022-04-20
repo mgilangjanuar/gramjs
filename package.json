@@ -1,6 +1,6 @@
 {
   "name": "teledrive-client",
-  "version": "2.5.55",
+  "version": "2.6.11",
   "description": "NodeJS/Browser MTProto API Telegram client library,",
   "main": "index.js",
   "types": "index.d.ts",
