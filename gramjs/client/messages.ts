@@ -45,7 +45,6 @@ export class _MessagesIter extends RequestIter {
         | Api.messages.GetReplies
         | Api.messages.GetHistory
         | Api.messages.Search;
-    fromId?: string | bigInt.BigInteger;
     addOffset?: number;
     maxId?: number;
     minId?: number;
@@ -98,9 +97,6 @@ export class _MessagesIter extends RequestIter {
         }
         if (fromUser) {
             fromUser = await this.client.getInputEntity(fromUser);
-            this.fromId = await this.client.getPeerId(fromUser);
-        } else {
-            this.fromId = undefined;
         }
 
         if (!this.entity && fromUser) {
@@ -139,11 +135,7 @@ export class _MessagesIter extends RequestIter {
             fromUser !== undefined
         ) {
             const ty = _entityType(this.entity);
-            if (ty == _EntityType.USER) {
-                fromUser = undefined;
-            } else {
-                this.fromId = undefined;
-            }
+
             this.request = new Api.messages.Search({
                 peer: this.entity,
                 q: search || "",
@@ -240,9 +232,6 @@ export class _MessagesIter extends RequestIter {
             ? (r.messages.reverse() as unknown as Api.Message[])
             : (r.messages as unknown as Api.Message[]);
         for (const message of messages) {
-            if (this.fromId && message.senderId?.notEquals(this.fromId)) {
-                continue;
-            }
             if (!this._messageInRange(message)) {
                 return true;
             }
@@ -763,15 +752,14 @@ export async function sendMessage(
             !(message.media instanceof Api.MessageMediaWebPage)
         ) {
             return client.sendFile(entity, {
-                                file: message.media,
-                                caption: message.message,
-                                silent: silent,
-                                replyTo: replyTo,
-                                buttons: markup,
-                                formattingEntities: message.entities,
-                                scheduleDate: schedule
-                            })
-
+                file: message.media,
+                caption: message.message,
+                silent: silent,
+                replyTo: replyTo,
+                buttons: markup,
+                formattingEntities: message.entities,
+                scheduleDate: schedule,
+            });
         }
         request = new Api.messages.SendMessage({
             peer: entity,
@@ -908,8 +896,8 @@ export async function editMessage(
         schedule,
     }: EditMessageParams
 ) {
-    if (typeof message === "number" && typeof text === "undefined" && !file) {
-        throw Error("You have to provide either file and text property.");
+    if (typeof message === "number" && typeof text === "undefined" && !file && !schedule) {
+        throw Error("You have to provide either file or text or schedule property.");
     }
     entity = await client.getInputEntity(entity);
     let id: number | undefined;
