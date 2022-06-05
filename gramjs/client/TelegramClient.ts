@@ -12,14 +12,7 @@ import * as userMethods from "./users";
 import * as chatMethods from "./chats";
 import * as dialogMethods from "./dialogs";
 import * as twoFA from "./2fa";
-import type {
-    ButtonLike,
-    Entity,
-    EntityLike,
-    MessageIDLike,
-    OutFile,
-    ProgressCallback,
-} from "../define";
+import type { ButtonLike, Entity, EntityLike, MessageIDLike } from "../define";
 import { Api } from "../tl";
 import { sanitizeParseMode } from "../Utils";
 import type { EventBuilder } from "../events/common";
@@ -88,9 +81,9 @@ export class TelegramClient extends TelegramBaseClient {
      * await client.start(botToken="123456:abcdfgh123456789);
      * // logging in as a user account
      * await client.start({
-     *   phoneNumber: async () => await input.text('number ?'),
-     *   password: async () => await input.text('password?'),
-     *   phoneCode: async () => await input.text('Code ?'),
+     *   phoneNumber: async () => await input.text("number ?"),
+     *   password: async () => await input.text("password?"),
+     *   phoneCode: async () => await input.text("Code ?"),
      *   onError: (err) => console.log(err),
      * });
      * >Number ? +1234567897
@@ -137,9 +130,9 @@ export class TelegramClient extends TelegramBaseClient {
      *         apiId:132456,
      *         apiHash:"132456",
      *     },{
-     *     phoneNumber: async () => await input.text('number ?'),
-     *     password: async () => await input.text('password?'),
-     *     phoneCode: async () => await input.text('Code ?'),
+     *     phoneNumber: async () => await input.text("number ?"),
+     *     password: async () => await input.text("password?"),
+     *     phoneCode: async () => await input.text("Code ?"),
      *     onError: (err) => console.log(err),
      *     })
      *  }
@@ -485,14 +478,14 @@ export class TelegramClient extends TelegramBaseClient {
      */
     downloadMedia(
         messageOrMedia: Api.Message | Api.TypeMessageMedia,
-        downloadParams: DownloadMediaInterface
+        downloadParams?: DownloadMediaInterface
     ) {
         return downloadMethods.downloadMedia(
             this,
             messageOrMedia,
-            downloadParams.outputFile,
-            downloadParams.thumb,
-            downloadParams.progressCallback
+            downloadParams?.outputFile,
+            downloadParams?.thumb,
+            downloadParams?.progressCallback
         );
     }
 
@@ -1137,8 +1130,8 @@ export class TelegramClient extends TelegramBaseClient {
      * await client.sendFile(chat, {file: file, progressCallback=console.log})
      *
      * // Dices, including dart and other future emoji
-     * await client.sendFile(chat, {file:new Api.InputMediaDice('')})
-     * await client.sendFile(chat, {file:new Api.InputMediaDice('🎯')})
+     * await client.sendFile(chat, {file:new Api.InputMediaDice("")})
+     * await client.sendFile(chat, {file:new Api.InputMediaDice("🎯")})
      *
      * // Contacts
      * await client.sendFile(chat, {file: new Api.InputMediaContact({
@@ -1366,14 +1359,15 @@ export class TelegramClient extends TelegramBaseClient {
         this._sender._reconnecting = false;
         this._sender._disconnected = true;
 
-        const connection = new this._connection(
-            this.session.serverAddress,
-            // We don't want to use the session for this.
-            this.useWSS ? 443 : 80,
-            this.session.dcId,
-            this._log,
-            this._proxy
-        );
+        const connection = new this._connection({
+            ip: this.session.serverAddress,
+            port: this.useWSS ? 443 : 80,
+            dcId: this.session.dcId,
+            loggers: this._log,
+            proxy: this._proxy,
+            socket: this.networkSocket,
+            testServers: this.testServers,
+        });
         const newConnection = await this._sender.connect(connection);
         if (!newConnection) {
             // we're already connected so no need to reset auth key.
@@ -1422,14 +1416,17 @@ export class TelegramClient extends TelegramBaseClient {
      * This will do an API request to fill the cache if it's the first time it's called.
      * @param dcId The DC ID.
      * @param downloadDC whether to use -1 DCs or not
+     * @param web if true this will get the web DCs.
+     * TODO, hardcode IPs.
      * (These only support downloading/uploading and not creating a new AUTH key)
      */
     async getDC(
         dcId: number,
-        downloadDC = false
+        downloadDC = false,
+        web = false
     ): Promise<{ id: number; ipAddress: string; port: number }> {
         this._log.debug(`Getting DC ${dcId}`);
-        if (!isNode) {
+        if (!isNode || web) {
             switch (dcId) {
                 case 1:
                     return {
